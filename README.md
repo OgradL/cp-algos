@@ -1,4 +1,4 @@
 # cp-algos
 
-here i keep my algos
-and my template i use for codeforces
+here i keep my algos :) <br>
+and the template i use for codeforces
