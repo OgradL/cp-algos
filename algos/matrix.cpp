@@ -1,103 +1,134 @@
 #include <iostream>
 #include <vector>
+#include <array>
 #include <assert.h>
 using namespace std;
 
-template<typename T = long long>
+template<typename T = long long, int sx = 2, int sy = 2>
 struct mat{
-	int x, y;
-	T **entries;
-	mat(int sx, int sy, T** values = NULL){
-		x = sx;
-		y = sy;
-		entries = (T**) malloc(x * sizeof(T*));
-		for (int i = 0; i < x; i++){
-			entries[i] = (T*) malloc(y * sizeof(T));
-		}
-		if (values != NULL){
-			for (int i = 0; i < x; i++){
-				for (int j = 0; j < y; j++){
-					entries[i][j] = values[i][j];
-				}
+	array<array<T, sy>, sx> entries;
+	mat(){
+		for (int i = 0; i < sx; i++){
+			for (int j = 0; j < sy; j++){
+				entries[i][j] = 0;
 			}
 		}
 	}
-	mat(int sx, int sy, initializer_list<vector<long long>> values){
-		x = sx;
-		y = sy;
-		entries = (T**) malloc(x * sizeof(T*));
-		vector<vector<long long>> tmp;
-		tmp.insert(tmp.begin(), values);
-		for (int i = 0; i < x; i++){
-			entries[i] = (T*) malloc(y * sizeof(T));
-		}
-		for (int i = 0; i < x; i++){
-			for (int j = 0; j < y; j++){
+	mat(array<array<T, sy>, sx>& tmp){
+		for (int i = 0; i < sx; i++){
+			for (int j = 0; j < sy; j++){
 				entries[i][j] = tmp[i][j];
 			}
 		}
 	}
-	T* operator [] (int idx){
+	mat(initializer_list<vector<long long>> values){
+		auto it = values.begin();
+		for (int i = 0; i < sx; i++){
+			auto it2 = it++->begin();
+			for (int j = 0; j < sy; j++){
+				entries[i][j] = *it2++;
+			}
+		}
+	}
+	mat operator=(mat tmp) {
+		for (int i = 0; i < sx; i++){
+			for (int j = 0; j < sy; j++){
+				entries[i][j] = tmp[i][j];
+			}
+		}
+		return *this;
+	}
+	array<T, sy>& operator [] (int idx){
 		return entries[idx];
 	}
 	mat operator %(long long mod){
-		mat ans = mat<T>(x, y, entries);
-		for (int i = 0; i < x; i++){
-			for (int j = 0; j < y; j++){
-				ans[i][j] %= mod;
+		mat<T, sx, sy> ans;
+		for (int i = 0; i < sx; i++){
+			for (int j = 0; j < sy; j++){
+				ans[i][j] = entries[i][j] % mod;
 			}
 		}
 		return ans;
 	}
-	mat operator *(mat<T>& a){
-		assert(x == a.y);
-		mat ans = mat<T>(a.x, y);
-		for (int i = 0; i < y; i++){
-			for (int j = 0; j < a.x; j++){
-				ans[j][i] = 0;
-				for (int k = 0; k < x; k++){
+	void operator %=(long long mod){
+		for (int i = 0; i < sx; i++){
+			for (int j = 0; j < sy; j++){
+				entries[i][j] %= mod;
+			}
+		}
+	}
+	template<int smx, int smy>
+	mat<T, smx, sy> operator *(mat<T, smx, smy>& a) const {
+		assert(sx == smy);
+		mat<T, smx, sy> ans;
+		for (int i = 0; i < sy; i++){
+			for (int j = 0; j < smx; j++){
+				for (int k = 0; k < sx; k++){
 					ans[j][i] += entries[k][i] * a[j][k];
 				}
 			}
 		}
 		return ans;
 	}
+	template<int smx, int smy>
+	void operator *=(mat<T, smx, smy>& a) const {
+		assert(sx == smy);
+		mat<T, smx, sy> ans;
+		for (int i = 0; i < sy; i++){
+			for (int j = 0; j < smx; j++){
+				for (int k = 0; k < sx; k++){
+					ans[j][i] += entries[k][i] * a[j][k];
+				}
+			}
+		}
+		entries = ans.entries;
+	}
 	void set(T v){
-		for (int i = 0; i < x; i++){
-			for (int j = 0; j < y; j++){
+		for (int i = 0; i < sx; i++){
+			for (int j = 0; j < sy; j++){
 				entries[i][j] = v;
 			}
 		}
 	}
 };
 
-
 template<typename T>
-T POW(T b, long long e, long long m){
-	if (e == 1) return b;
-	T v = POW(b, e/2, m);
-	v = (v * v) % m;
-	if (e&1){
-		v = (v * b) % m;
+T POW(T b, long long e, long long m, T identity){
+	T ret = identity;
+	while (e){
+		if (e & 1){
+			ret = ret * b;
+		}
+		b = b * b;
+		e /= 2;
 	}
-	return v;
+	return ret;
 }
 
 const long long MOD = 1e9 + 7;
+
+using matrix = mat<long long, 2, 2>;
 
 int main(){
 
 	long long N;
 	cin >> N;
 
-	mat X = mat<long long>(6, 6, {{0, 1, 0, 0, 0, 0},
-								  {0, 0, 1, 0, 0, 0},
-								  {0, 0, 0, 1, 0, 0},
-								  {0, 0, 0, 0, 1, 0},
-								  {0, 0, 0, 0, 0, 1},
-								  {1, 1, 1, 1, 1, 1}});
+	mat X = matrix({{0, 1, 0, 0, 0, 0},
+					{0, 0, 1, 0, 0, 0},
+					{0, 0, 0, 1, 0, 0},
+					{0, 0, 0, 0, 1, 0},
+					{0, 0, 0, 0, 0, 1},
+					{1, 1, 1, 1, 1, 1}});
 
-	mat<long long> ans = POW<mat<long long>>(X, N, MOD);
+	matrix identity = matrix({{1, 0, 0, 0, 0, 0},
+							  {0, 1, 0, 0, 0, 0},
+							  {0, 0, 1, 0, 0, 0},
+							  {0, 0, 0, 1, 0, 0},
+							  {0, 0, 0, 0, 1, 0},
+							  {0, 0, 0, 0, 0, 1}});
+
+	mat<long long> ans = POW<matrix>(X, N, MOD, identity);
 
 	cout << ans[5][5] << "\n";
 
